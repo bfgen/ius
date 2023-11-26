@@ -1,0 +1,75 @@
+version: '3.5'
+
+services:
+  core:
+    build:
+      context: .
+      dockerfile: docker/core/Dockerfile
+      args:
+        PHP_VERSION: '${CORE_PHP_VERSION}'
+        COMPOSER_VERSION: '${CORE_COMPOSER_VERSION}'
+        NODE_VERSION: '${CORE_NODE_VERSION}'
+        WWWUSER: '${CORE_WWWUSER}'
+        WWWGROUP: '${CORE_WWWGROUP}'
+        TZ: '${CORE_TZ}'
+        OCTANE_SERVER: '${CORE_OCTANE_SERVER}'
+        CONTAINER_MODE: '${CORE_CONTAINER_MODE}'
+        APP_WITH_OCTANE: '${CORE_APP_WITH_OCTANE}'
+        APP_WITH_OCTANE_WATCH: '${CORE_APP_WITH_OCTANE_WATCH}'
+        APP_WITH_HORIZON: '${CORE_APP_WITH_HORIZON}'
+        APP_WITH_SCHEDULER: '${CORE_APP_WITH_SCHEDULER}'
+    image: 'bfgen/ius-core'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '80:9000'
+    networks:
+      - core
+    volumes:
+      - './src/core:/var/www/html'
+    depends_on:
+      - base
+      - cache
+
+  base:
+    image: 'mysql'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${CORE_DB_ROOT_PASSWORD}'
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_USER: '${CORE_DB_USERNAME}'
+      MYSQL_DATABASE: '${CORE_DB_DATABASE}'
+      MYSQL_PASSWORD: '${CORE_DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    ports:
+      - '33068:3306'
+    networks:
+      - core
+    volumes:
+      - 'core-base:/var/lib/mysql'
+      - './docker/base/init:/docker-entrypoint-initdb.d'
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-p${CORE_DB_PASSWORD}" ]
+      retries: 3
+      timeout: 5s
+
+  cache:
+    image: 'redis'
+    networks:
+      - core
+    volumes:
+      - 'core-redis:/data'
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+
+networks:
+  core:
+    driver: bridge
+    name: core
+
+volumes:
+  core-base:
+    driver: local
+  core-redis:
+    driver: local

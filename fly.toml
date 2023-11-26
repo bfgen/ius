@@ -1,0 +1,36 @@
+# fly.toml app configuration file generated for ius on 2023-11-25T15:50:14+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "ius"
+primary_region = "ams"
+
+[build]
+  dockerfile = "docker/core/Dockerfile"
+  [build.args]
+    APP_WITH_OCTANE = "true"
+    APP_WITH_OCTANE_WATCH = "false"
+    APP_WITH_HORIZON = "false"
+    APP_WITH_SCHEDULER = "true"
+    COMPOSER_VERSION = "latest"
+    CONTAINER_MODE = "app"
+    NODE_VERSION = "20-alpine"
+    OCTANE_SERVER = "swoole"
+    PHP_VERSION = "8.2"
+    TZ = "UTC"
+    WWWGROUP = "1000"
+    WWWUSER = "1000"
+
+[http_service]
+  internal_port = 9000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory_mb = 4096
